@@ -1,0 +1,14 @@
+{
+  "name": "claude-focus",
+  "displayName": "Claude Focus",
+  "description": "Focus a VS Code integrated terminal by shell PID via a vscode:// URI. Pairs with the claude-terminal-focus Claude Code hook.",
+  "version": "0.1.0",
+  "publisher": "claude-code-community",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "main": "./extension.js",
+  "activationEvents": [
+    "onUri"
+  ]
+}

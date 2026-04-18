@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# Claude Code notification hook.
+# Dispatches a macOS banner via terminal-notifier whose click-action
+# focuses the exact terminal tab Claude is running in.
+#
+# Supported terminals (via $TERM_PROGRAM):
+#   - vscode          -> vscode:// URI handled by the claude-focus VS Code extension
+#   - Apple_Terminal  -> AppleScript matching Terminal.app tab by tty
+#   - anything else   -> banner only, no click-through
+
+set -u
+
+event="${1:-notification}"
+payload=$(cat)
+
+case "$event" in
+  notification)
+    msg=$(jq -r '.message // "Needs your attention"' <<<"$payload")
+    sound="Glass"
+    ;;
+  stop)
+    msg="Task complete"
+    sound="Hero"
+    ;;
+  *)
+    msg="Claude Code"
+    sound="Glass"
+    ;;
+esac
+
+# Walk up the process tree to find the interactive shell PID.
+# VS Code / Terminal.app spawn zsh/bash/fish directly; Claude Code is
+# a Node child of that shell; the hook is a sh/bash child of Claude.
+# Start from PPID so we skip this script's own bash interpreter.
+pid=$PPID
+for _ in 1 2 3 4 5 6 7 8; do
+  comm=$(ps -o comm= -p "$pid" 2>/dev/null | awk '{print $NF}')
+  case "$comm" in
+    *zsh|*bash|*fish) break ;;
+  esac
+  parent=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
+  if [ -z "$parent" ] || [ "$parent" = "0" ] || [ "$parent" = "1" ] || [ "$parent" = "$pid" ]; then
+    break
+  fi
+  pid="$parent"
+done
+
+SELF_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
+case "${TERM_PROGRAM:-}" in
+  vscode)
+    # The publisher/name must match what the VS Code extension registers.
+    execute_cmd="open 'vscode://claude-code-community.claude-focus/focus?pid=${pid}'"
+    ;;
+  Apple_Terminal)
+    tty_path=$(ps -o tty= -p "$pid" 2>/dev/null | tr -d ' ')
+    execute_cmd="$SELF_DIR/focus-terminal-tab.sh '$tty_path'"
+    ;;
+  *)
+    execute_cmd=""
+    ;;
+esac
+
+if [ -n "$execute_cmd" ]; then
+  terminal-notifier \
+    -title 'Claude Code' \
+    -message "$msg" \
+    -sound "$sound" \
+    -execute "$execute_cmd"
+else
+  terminal-notifier \
+    -title 'Claude Code' \
+    -message "$msg" \
+    -sound "$sound"
+fi
