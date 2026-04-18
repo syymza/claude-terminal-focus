@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "claude-terminal-focus",
+  "description": "Click Claude Code notifications to jump back to the exact terminal tab the session is running in.",
+  "owner": {
+    "name": "Daniele Zanni"
+  },
+  "plugins": [
+    {
+      "name": "claude-terminal-focus",
+      "description": "Notification + Stop hooks that fire click-to-focus macOS banners (VS Code and Terminal.app).",
+      "source": "./plugins/claude-terminal-focus",
+      "category": "productivity",
+      "homepage": "https://github.com/syymza/claude-terminal-focus"
+    }
+  ]
+}

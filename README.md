@@ -28,13 +28,10 @@ Claude Code's `Notification` and `Stop` hooks fire a `terminal-notifier` banner 
    ./install.sh
    ```
 3. Reload your VS Code window: `Cmd+Shift+P` -> `Developer: Reload Window`.
-4. Install the Claude Code plugin half (wires up the hooks):
+4. Wire up the Claude Code plugin half. In Claude Code, register this repo as a marketplace and install the plugin:
    ```
-   /plugin install <this-repo-url>
-   ```
-   Or from a local clone:
-   ```
-   /plugin install /absolute/path/to/claude-terminal-focus
+   /plugin marketplace add syymza/claude-terminal-focus
+   /plugin install claude-terminal-focus@claude-terminal-focus
    ```
 5. Confirm `terminal-notifier` is allowed in **System Settings -> Notifications**. If banners don't appear, open `/opt/homebrew/Cellar/terminal-notifier/*/terminal-notifier.app` once so macOS registers it.
 6. Optional: set **Alert Style -> Persistent** (older macOS labels this "Alerts") so banners stay on screen until clicked instead of auto-dismissing.
@@ -56,10 +53,12 @@ code --uninstall-extension claude-code-community.claude-focus
 ## Repo layout
 
 ```
-.claude-plugin/plugin.json     Claude Code plugin manifest
-hooks/hooks.json               Hook declarations (Notification + Stop)
-hooks/notify.sh                Main hook: picks focus strategy by $TERM_PROGRAM
-hooks/focus-terminal-tab.sh    AppleScript helper for Terminal.app
-vscode-extension/              Source for the companion VS Code extension
-install.sh                     Packages + installs the VS Code extension
+.claude-plugin/marketplace.json                       Marketplace manifest
+plugins/claude-terminal-focus/
+  .claude-plugin/plugin.json                          Plugin manifest
+  hooks/hooks.json                                    Notification + Stop hook declarations
+  hooks/notify.sh                                     Main hook: picks focus strategy by $TERM_PROGRAM
+  hooks/focus-terminal-tab.sh                         AppleScript helper for Terminal.app
+vscode-extension/                                     Source for the companion VS Code extension
+install.sh                                            Packages + installs the VS Code extension
 ```
