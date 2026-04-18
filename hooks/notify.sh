@@ -61,15 +61,22 @@ case "${TERM_PROGRAM:-}" in
     ;;
 esac
 
+# -group keyed on the shell PID so repeat notifications from the same
+# Claude session replace the older entry in Notification Center instead
+# of piling up. Different sessions (different PIDs) still stack.
+group="claude-code-$pid"
+
 if [ -n "$execute_cmd" ]; then
   terminal-notifier \
     -title 'Claude Code' \
     -message "$msg" \
     -sound "$sound" \
+    -group "$group" \
     -execute "$execute_cmd"
 else
   terminal-notifier \
     -title 'Claude Code' \
     -message "$msg" \
-    -sound "$sound"
+    -sound "$sound" \
+    -group "$group"
 fi
