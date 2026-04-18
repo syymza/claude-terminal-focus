@@ -20,38 +20,43 @@ Claude Code's `Notification` and `Stop` hooks fire a `terminal-notifier` banner 
 - macOS
 - [terminal-notifier](https://github.com/julienXX/terminal-notifier) (`brew install terminal-notifier`)
 - `jq` (`brew install jq`)
-- Node / `npx` (only needed at install time, to package the VS Code extension)
-- `code` or `cursor` CLI on `$PATH` (if you use VS Code or Cursor)
+- Node / `npx` (only needed at install time, to package the editor extension)
+- `code` or `cursor` CLI on `$PATH` (only if you use VS Code and/or Cursor — `install.sh` installs into whichever CLIs it finds)
 
 ## Install
 
-1. Clone this repo.
-2. Run the bootstrap script (packages + installs the VS Code extension):
-   ```bash
-   ./install.sh
-   ```
-3. Reload your VS Code window: `Cmd+Shift+P` -> `Developer: Reload Window`.
-4. Wire up the Claude Code plugin half. In Claude Code, register this repo as a marketplace and install the plugin:
+1. Wire up the Claude Code plugin (required — this is what fires the notifications):
    ```
    /plugin marketplace add syymza/claude-terminal-focus
    /plugin install claude-terminal-focus@claude-terminal-focus
    ```
-5. Confirm `terminal-notifier` is allowed in **System Settings -> Notifications**. If banners don't appear, open `/opt/homebrew/Cellar/terminal-notifier/*/terminal-notifier.app` once so macOS registers it.
-6. Optional: set **Alert Style -> Persistent** (older macOS labels this "Alerts") so banners stay on screen until clicked instead of auto-dismissing.
+2. **VS Code / Cursor users only** — clone this repo and run the bootstrap script to install the companion editor extension. It packages the VSIX and installs into both `code` and `cursor` if their CLIs are on PATH:
+   ```bash
+   git clone https://github.com/syymza/claude-terminal-focus.git
+   cd claude-terminal-focus
+   ./install.sh
+   ```
+   Then reload your editor window: `Cmd+Shift+P` -> `Developer: Reload Window`. Terminal.app / iTerm2 / Warp users can skip this step entirely.
+3. Confirm `terminal-notifier` is allowed in **System Settings -> Notifications**. If banners don't appear, open `/opt/homebrew/Cellar/terminal-notifier/*/terminal-notifier.app` once so macOS registers it.
+4. Optional: set **Alert Style -> Persistent** (older macOS labels this "Alerts") so banners stay on screen until clicked instead of auto-dismissing.
 
 ## Uninstall
 
 ```bash
-code --uninstall-extension claude-code-community.claude-focus
-# and in Claude Code:
+# In Claude Code:
 /plugin uninstall claude-terminal-focus
+
+# Then, if you installed the editor extension:
+code --uninstall-extension claude-code-community.claude-focus 2>/dev/null
+cursor --uninstall-extension claude-code-community.claude-focus 2>/dev/null
 ```
 
 ## Troubleshooting
 
 - **Banner never appears** — `terminal-notifier` isn't allowed to post notifications. Check System Settings -> Notifications.
-- **Click lands on wrong tab (VS Code)** — probably started Claude in a different window than the one currently focused when you clicked. VS Code routes `vscode://` URIs to the focused window only.
-- **Click does nothing (Terminal.app)** — automation permission prompt may have been denied. Check System Settings -> Privacy & Security -> Automation -> `terminal-notifier` -> Terminal.
+- **Click lands on wrong window (VS Code / Cursor)** — `vscode://` / `cursor://` URIs are routed to whichever editor window is currently focused, not the one that emitted the notification. There's no workaround on the editor side — focus the intended window before clicking, or keep one Claude session per window.
+- **Click does nothing (Terminal.app or iTerm2)** — automation permission prompt may have been denied. Check System Settings -> Privacy & Security -> Automation -> `terminal-notifier` -> enable the matching target (Terminal or iTerm).
+- **Cursor session emits `vscode://` instead of `cursor://`** — the discriminator reads `VSCODE_GIT_ASKPASS_NODE` / `CURSOR_TRACE_ID`. Run `env | grep -i cursor` inside your Cursor terminal; if neither var is set, open an issue with what env vars Cursor does expose for you.
 
 ## Repo layout
 
