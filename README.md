@@ -6,11 +6,14 @@ Click a Claude Code macOS notification and jump straight back to the terminal ta
 
 Claude Code's `Notification` and `Stop` hooks fire a `terminal-notifier` banner whose click-action focuses the exact terminal where Claude is running:
 
-| Terminal          | Click behaviour                                                              |
-| ----------------- | ---------------------------------------------------------------------------- |
-| VS Code           | Companion VS Code extension focuses the matching integrated terminal tab.    |
-| macOS Terminal.app| AppleScript matches the tab by tty and selects its window.                   |
-| Anything else     | Banner shows with no click-through (graceful fallback).                      |
+| Terminal           | Click behaviour                                                             |
+| ------------------ | --------------------------------------------------------------------------- |
+| VS Code            | Companion extension focuses the matching integrated terminal tab.           |
+| Cursor             | Same extension (installed into Cursor) focuses the matching terminal tab.   |
+| macOS Terminal.app | AppleScript matches the tab by tty and selects its window.                  |
+| iTerm2             | AppleScript matches the session by tty and selects its tab/window.          |
+| Warp               | Activates Warp (no tab-level focus — Warp's AppleScript surface is limited).|
+| Anything else      | Banner shows with no click-through (graceful fallback).                     |
 
 ## Requirements
 
@@ -18,7 +21,7 @@ Claude Code's `Notification` and `Stop` hooks fire a `terminal-notifier` banner 
 - [terminal-notifier](https://github.com/julienXX/terminal-notifier) (`brew install terminal-notifier`)
 - `jq` (`brew install jq`)
 - Node / `npx` (only needed at install time, to package the VS Code extension)
-- VS Code `code` CLI on `$PATH` (if you use VS Code)
+- `code` or `cursor` CLI on `$PATH` (if you use VS Code or Cursor)
 
 ## Install
 
@@ -59,6 +62,7 @@ plugins/claude-terminal-focus/
   hooks/hooks.json                                    Notification + Stop hook declarations
   hooks/notify.sh                                     Main hook: picks focus strategy by $TERM_PROGRAM
   hooks/focus-terminal-tab.sh                         AppleScript helper for Terminal.app
-vscode-extension/                                     Source for the companion VS Code extension
-install.sh                                            Packages + installs the VS Code extension
+  hooks/focus-iterm2-tab.sh                           AppleScript helper for iTerm2
+vscode-extension/                                     Source for the VS Code / Cursor extension
+install.sh                                            Packages + installs the extension into VS Code / Cursor
 ```

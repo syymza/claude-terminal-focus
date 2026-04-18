@@ -5,7 +5,10 @@
 #
 # Supported terminals (via $TERM_PROGRAM):
 #   - vscode          -> vscode:// URI handled by the claude-focus VS Code extension
+#                        (Cursor detected via VSCODE_GIT_ASKPASS_NODE, uses cursor://)
 #   - Apple_Terminal  -> AppleScript matching Terminal.app tab by tty
+#   - iTerm.app       -> AppleScript matching iTerm2 session by tty
+#   - WarpTerminal    -> bring Warp to front (tab focus not available)
 #   - anything else   -> banner only, no click-through
 #
 # Banner layout:
@@ -101,12 +104,28 @@ SELF_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 case "${TERM_PROGRAM:-}" in
   vscode)
-    # The publisher/name must match what the VS Code extension registers.
-    execute_cmd="open 'vscode://claude-code-community.claude-focus/focus?pid=${pid}'"
+    # Cursor is a VS Code fork and also sets TERM_PROGRAM=vscode.
+    # Distinguish by VSCODE_GIT_ASKPASS_NODE (its path contains "Cursor"
+    # inside Cursor, "Visual Studio Code" inside VS Code).
+    scheme="vscode"
+    if [[ "${VSCODE_GIT_ASKPASS_NODE:-}" == *Cursor* ]] || [ -n "${CURSOR_TRACE_ID:-}" ]; then
+      scheme="cursor"
+    fi
+    # Publisher/name must match what the companion VS Code/Cursor extension registers.
+    execute_cmd="open '${scheme}://claude-code-community.claude-focus/focus?pid=${pid}'"
     ;;
   Apple_Terminal)
     tty_path=$(ps -o tty= -p "$pid" 2>/dev/null | tr -d ' ')
     execute_cmd="$SELF_DIR/focus-terminal-tab.sh '$tty_path'"
+    ;;
+  iTerm.app)
+    tty_path=$(ps -o tty= -p "$pid" 2>/dev/null | tr -d ' ')
+    execute_cmd="$SELF_DIR/focus-iterm2-tab.sh '$tty_path'"
+    ;;
+  WarpTerminal)
+    # Warp's AppleScript surface doesn't expose tabs reliably, so the
+    # best we can do is bring the Warp app to front on click.
+    execute_cmd="open -a 'Warp'"
     ;;
   *)
     execute_cmd=""

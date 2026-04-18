@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Installs the VS Code extension half of claude-terminal-focus.
-# The Claude Code plugin (hooks) is activated separately via `/plugin install`.
+# Installs the VS Code / Cursor extension half of claude-terminal-focus.
+# The Claude Code plugin (hooks) is activated separately — see README.
 
 set -euo pipefail
 
@@ -10,8 +10,16 @@ EXT_DIR="$REPO_DIR/vscode-extension"
 missing=()
 command -v terminal-notifier >/dev/null 2>&1 || missing+=("terminal-notifier (brew install terminal-notifier)")
 command -v jq >/dev/null 2>&1 || missing+=("jq (brew install jq)")
-command -v code >/dev/null 2>&1 || missing+=("code (VS Code 'Shell Command: Install code command in PATH')")
 command -v npx >/dev/null 2>&1 || missing+=("npx (install Node.js)")
+
+have_code=0
+have_cursor=0
+command -v code >/dev/null 2>&1 && have_code=1
+command -v cursor >/dev/null 2>&1 && have_cursor=1
+
+if [ "$have_code" -eq 0 ] && [ "$have_cursor" -eq 0 ]; then
+  missing+=("code or cursor CLI on PATH (VS Code -> 'Shell Command: Install code command in PATH'; Cursor -> same under its menu)")
+fi
 
 if [ "${#missing[@]}" -gt 0 ]; then
   echo "Missing required commands:" >&2
@@ -26,14 +34,21 @@ npx --yes @vscode/vsce@latest package --allow-missing-repository --skip-license 
 vsix_file=$(ls ./*.vsix | head -n1)
 popd >/dev/null
 
-echo "Installing $(basename "$vsix_file") into VS Code..."
-code --install-extension "$EXT_DIR/$vsix_file" --force
+if [ "$have_code" -eq 1 ]; then
+  echo "Installing $(basename "$vsix_file") into VS Code..."
+  code --install-extension "$EXT_DIR/$vsix_file" --force
+fi
+
+if [ "$have_cursor" -eq 1 ]; then
+  echo "Installing $(basename "$vsix_file") into Cursor..."
+  cursor --install-extension "$EXT_DIR/$vsix_file" --force
+fi
 
 echo
 echo "Done. Next steps:"
-echo "  1. Reload your VS Code window: Cmd+Shift+P -> 'Developer: Reload Window'"
-echo "  2. Enable the Claude Code plugin (if not already):"
-echo "       /plugin install <this-repo-url>"
-echo "     or clone and run: /plugin install $REPO_DIR"
+echo "  1. Reload your editor window: Cmd+Shift+P -> 'Developer: Reload Window'"
+echo "  2. Wire up the Claude Code plugin:"
+echo "       /plugin marketplace add syymza/claude-terminal-focus"
+echo "       /plugin install claude-terminal-focus@claude-terminal-focus"
 echo "  3. Make sure terminal-notifier is allowed in"
 echo "     System Settings -> Notifications."
