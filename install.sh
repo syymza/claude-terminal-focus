@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
-# Installs the VS Code / Cursor extension half of claude-terminal-focus.
-# The Claude Code plugin (hooks) is activated separately — see README.
+# Installs the VS Code / Cursor extension half of claude-terminal-focus,
+# and copies the hook scripts into ~/.claude/hooks/. Wiring those hooks
+# into ~/.claude/settings.json (or installing via the marketplace plugin)
+# is a separate step — see README.
 
 set -euo pipefail
 
 REPO_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 EXT_DIR="$REPO_DIR/vscode-extension"
+HOOKS_SRC="$REPO_DIR/plugins/claude-terminal-focus/hooks"
+HOOKS_DST="${CLAUDE_HOOKS_DIR:-$HOME/.claude/hooks}"
 
 missing=()
 command -v terminal-notifier >/dev/null 2>&1 || missing+=("terminal-notifier (brew install terminal-notifier)")
@@ -44,11 +48,21 @@ if [ "$have_cursor" -eq 1 ]; then
   cursor --install-extension "$EXT_DIR/$vsix_file" --force
 fi
 
+echo "Installing hook scripts into $HOOKS_DST..."
+mkdir -p "$HOOKS_DST"
+for script in notify.sh focus-terminal-tab.sh focus-iterm2-tab.sh; do
+  cp "$HOOKS_SRC/$script" "$HOOKS_DST/$script"
+  chmod +x "$HOOKS_DST/$script"
+done
+
 echo
 echo "Done. Next steps:"
 echo "  1. Reload your editor window: Cmd+Shift+P -> 'Developer: Reload Window'"
-echo "  2. Wire up the Claude Code plugin:"
+echo "  2. If this is a fresh install, wire the hooks into Claude Code"
+echo "     either via the marketplace plugin:"
 echo "       /plugin marketplace add syymza/claude-terminal-focus"
 echo "       /plugin install claude-terminal-focus@claude-terminal-focus"
+echo "     or by adding Notification + Stop entries to ~/.claude/settings.json"
+echo "     pointing at $HOOKS_DST/notify.sh."
 echo "  3. Make sure terminal-notifier is allowed in"
 echo "     System Settings -> Notifications."

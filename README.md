@@ -13,6 +13,8 @@ Claude Code's `Notification` and `Stop` hooks fire a `terminal-notifier` banner 
 | macOS Terminal.app | AppleScript matches the tab by tty and selects its window.                  |
 | iTerm2             | AppleScript matches the session by tty and selects its tab/window.          |
 | Warp               | Activates Warp (no tab-level focus — Warp's AppleScript surface is limited).|
+| cmux               | Hook stays out of the way; cmux's bundled `claude-hook` integration already fires a native banner with click-to-focus, ring pulse, and sidebar badge — no duplicate. |
+| Ghostty (plain)    | Banner shows with no click-through (Ghostty has no scriptable tab focus).   |
 | Anything else      | Banner shows with no click-through (graceful fallback).                     |
 
 ## Requirements
@@ -55,6 +57,7 @@ cursor --uninstall-extension claude-code-community.claude-focus 2>/dev/null
 
 - **Banner never appears** — `terminal-notifier` isn't allowed to post notifications. Check System Settings -> Notifications.
 - **Click does nothing (Terminal.app or iTerm2)** — automation permission prompt may have been denied. Check System Settings -> Privacy & Security -> Automation -> `terminal-notifier` -> enable the matching target (Terminal or iTerm).
+- **No banner inside cmux** — cmux fires its own banner via its bundled `claude-hook`, so this hook intentionally exits early when `$CMUX_SURFACE_ID` is set. If you don't see cmux's banner either, check cmux's own notification settings.
 
 ## Repo layout
 
@@ -67,5 +70,5 @@ plugins/claude-terminal-focus/
   hooks/focus-terminal-tab.sh                         AppleScript helper for Terminal.app
   hooks/focus-iterm2-tab.sh                           AppleScript helper for iTerm2
 vscode-extension/                                     Source for the VS Code / Cursor extension
-install.sh                                            Packages + installs the extension into VS Code / Cursor
+install.sh                                            Packages + installs the editor extension and copies hook scripts into ~/.claude/hooks/
 ```

@@ -4,11 +4,16 @@
 # focuses the exact terminal tab Claude is running in.
 #
 # Supported terminals (via $TERM_PROGRAM):
+#   - cmux            -> hook exits early; cmux's bundled claude-hook
+#                        integration already fires a native banner with
+#                        click-to-focus, ring pulse, and sidebar badge.
+#                        Detected via $CMUX_SURFACE_ID (or $TERM_PROGRAM=cmux).
 #   - vscode          -> vscode:// URI handled by the claude-focus VS Code extension
 #                        (Cursor detected via VSCODE_GIT_ASKPASS_NODE, uses cursor://)
 #   - Apple_Terminal  -> AppleScript matching Terminal.app tab by tty
 #   - iTerm.app       -> AppleScript matching iTerm2 session by tty
 #   - WarpTerminal    -> bring Warp to front (tab focus not available)
+#   - ghostty         -> banner only (no scriptable tab focus)
 #   - anything else   -> banner only, no click-through
 #
 # Banner layout:
@@ -102,6 +107,17 @@ done
 
 SELF_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
+# Cmux already injects its own claude-hook integration when it launches
+# `claude` (Stop / Notification / etc. all call `cmux claude-hook ...`),
+# which fires a native cmux banner with click-to-focus, ring pulse, and
+# sidebar badge. Anything we do here is redundant — exit so we don't
+# stack a second banner on top of cmux's native one.
+# Detect via CMUX_SURFACE_ID first (most reliable; cmux exports it per
+# surface) and TERM_PROGRAM=cmux as a fallback.
+if [ -n "${CMUX_SURFACE_ID:-}" ] || [ "${TERM_PROGRAM:-}" = "cmux" ]; then
+  exit 0
+fi
+
 case "${TERM_PROGRAM:-}" in
   vscode)
     # Cursor is a VS Code fork and also sets TERM_PROGRAM=vscode.
@@ -126,6 +142,11 @@ case "${TERM_PROGRAM:-}" in
     # Warp's AppleScript surface doesn't expose tabs reliably, so the
     # best we can do is bring the Warp app to front on click.
     execute_cmd="open -a 'Warp'"
+    ;;
+  ghostty)
+    # Plain Ghostty has no scriptable tab focus. Cmux-inside-Ghostty was
+    # already handled and exited above.
+    execute_cmd=""
     ;;
   *)
     execute_cmd=""
