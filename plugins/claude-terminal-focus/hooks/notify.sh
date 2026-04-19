@@ -9,6 +9,8 @@
 #   - Apple_Terminal  -> AppleScript matching Terminal.app tab by tty
 #   - iTerm.app       -> AppleScript matching iTerm2 session by tty
 #   - WarpTerminal    -> bring Warp to front (tab focus not available)
+#   - ghostty         -> cmux focus-surface when $CMUX_SURFACE_ID is set
+#                        (plain Ghostty falls through with no click-through)
 #   - anything else   -> banner only, no click-through
 #
 # Banner layout:
@@ -126,6 +128,20 @@ case "${TERM_PROGRAM:-}" in
     # Warp's AppleScript surface doesn't expose tabs reliably, so the
     # best we can do is bring the Warp app to front on click.
     execute_cmd="open -a 'Warp'"
+    ;;
+  ghostty)
+    # cmux runs panes inside Ghostty and exports CMUX_SURFACE_ID; plain
+    # Ghostty has no scriptable tab focus, so we only handle the cmux case.
+    # Resolve the cmux binary here (hook inherits the user's PATH);
+    # terminal-notifier's -execute runs under /bin/sh with a minimal PATH.
+    if [ -n "${CMUX_SURFACE_ID:-}" ]; then
+      cmux_bin=$(command -v cmux 2>/dev/null || true)
+      [ -z "$cmux_bin" ] && [ -x /usr/local/bin/cmux ] && cmux_bin=/usr/local/bin/cmux
+      [ -z "$cmux_bin" ] && [ -x /opt/homebrew/bin/cmux ] && cmux_bin=/opt/homebrew/bin/cmux
+      if [ -n "$cmux_bin" ]; then
+        execute_cmd="$cmux_bin focus-surface --surface '$CMUX_SURFACE_ID'"
+      fi
+    fi
     ;;
   *)
     execute_cmd=""
