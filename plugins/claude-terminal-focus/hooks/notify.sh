@@ -88,6 +88,19 @@ case "$event" in
     ;;
 esac
 
+# Optional phone push via ntfy.sh. Opt-in: no-op unless CLAUDE_NTFY_TOPIC is set.
+# Fires before the cmux early-exit below so cmux sessions also reach the phone.
+# Backgrounded so network latency can't delay the desktop banner; --max-time
+# caps the lifetime if the server is unreachable.
+if [ -n "${CLAUDE_NTFY_TOPIC:-}" ]; then
+  ntfy_server="${CLAUDE_NTFY_SERVER:-https://ntfy.sh}"
+  ntfy_title="Claude Code"
+  [ -n "$subtitle" ] && ntfy_title="$ntfy_title — $subtitle"
+  ntfy_args=(--silent --show-error --max-time 3 -H "Title: $ntfy_title" -d "$msg")
+  [ -n "${CLAUDE_NTFY_CLICK_URL:-}" ] && ntfy_args+=(-H "Click: $CLAUDE_NTFY_CLICK_URL")
+  curl "${ntfy_args[@]}" "$ntfy_server/$CLAUDE_NTFY_TOPIC" >/dev/null 2>&1 &
+fi
+
 # Walk up the process tree to find the interactive shell PID.
 # VS Code / Terminal.app spawn zsh/bash/fish directly; Claude Code is
 # a Node child of that shell; the hook is a sh/bash child of Claude.

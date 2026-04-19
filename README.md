@@ -42,6 +42,27 @@ Claude Code's `Notification` and `Stop` hooks fire a `terminal-notifier` banner 
 3. Confirm `terminal-notifier` is allowed in **System Settings -> Notifications**. If banners don't appear, open `/opt/homebrew/Cellar/terminal-notifier/*/terminal-notifier.app` once so macOS registers it.
 4. Optional: set **Alert Style -> Persistent** (older macOS labels this "Alerts") so banners stay on screen until clicked instead of auto-dismissing.
 
+## Phone notifications (optional)
+
+Opt in to get the same notifications pushed to your iPhone via [ntfy.sh](https://ntfy.sh). This runs **in addition to** the desktop banner — including inside cmux, where the desktop side is left to cmux's own integration. Tapping the phone notification can't focus a Mac terminal, but it can open an arbitrary URL (e.g. your repo).
+
+1. Install the **ntfy** iOS app and subscribe to a topic. Pick something unguessable — on public `ntfy.sh` the topic is the only access control, and the message body contains the first line of Claude's last reply:
+   ```bash
+   uuidgen | tr 'A-Z' 'a-z'   # e.g. claude-a1b2c3d4-...
+   ```
+2. Export the topic (and optionally a click-through URL and a self-hosted server) in your shell profile:
+   ```bash
+   export CLAUDE_NTFY_TOPIC=claude-a1b2c3d4-...
+   export CLAUDE_NTFY_CLICK_URL=https://github.com/your/repo   # optional
+   export CLAUDE_NTFY_SERVER=https://ntfy.example.com          # optional, default https://ntfy.sh
+   ```
+3. Start Claude Code from that shell. The hook POSTs to `$CLAUDE_NTFY_SERVER/$CLAUDE_NTFY_TOPIC` on every Notification/Stop event.
+
+Notes:
+- Leaving `CLAUDE_NTFY_TOPIC` unset disables push entirely — existing installs are unaffected.
+- The curl is backgrounded and `--max-time 3`, so a slow or unreachable ntfy server can't delay the desktop banner.
+- Messages are cached server-side for ~12h on public `ntfy.sh`. Self-host if that matters.
+
 ## Uninstall
 
 ```bash
