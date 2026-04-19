@@ -54,9 +54,7 @@ cursor --uninstall-extension claude-code-community.claude-focus 2>/dev/null
 ## Troubleshooting
 
 - **Banner never appears** — `terminal-notifier` isn't allowed to post notifications. Check System Settings -> Notifications.
-- **Click lands on wrong window (VS Code / Cursor)** — `vscode://` / `cursor://` URIs are routed to whichever editor window is currently focused, not the one that emitted the notification. There's no workaround on the editor side — focus the intended window before clicking, or keep one Claude session per window.
 - **Click does nothing (Terminal.app or iTerm2)** — automation permission prompt may have been denied. Check System Settings -> Privacy & Security -> Automation -> `terminal-notifier` -> enable the matching target (Terminal or iTerm).
-- **Cursor session emits `vscode://` instead of `cursor://`** — the discriminator reads `VSCODE_GIT_ASKPASS_NODE` / `CURSOR_TRACE_ID`. Run `env | grep -i cursor` inside your Cursor terminal; if neither var is set, open an issue with what env vars Cursor does expose for you.
 
 ## Repo layout
 
