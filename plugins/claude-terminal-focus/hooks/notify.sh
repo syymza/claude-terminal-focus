@@ -4,6 +4,9 @@
 # focuses the exact terminal tab Claude is running in.
 #
 # Supported terminals (via $TERM_PROGRAM):
+#   - cmux            -> `cmux notify` for native banner + click-to-focus +
+#                        sidebar badge (detected via $CMUX_SURFACE_ID first,
+#                        then $TERM_PROGRAM=cmux). Skips terminal-notifier.
 #   - vscode          -> vscode:// URI handled by the claude-focus VS Code extension
 #                        (Cursor detected via VSCODE_GIT_ASKPASS_NODE, uses cursor://)
 #   - Apple_Terminal  -> AppleScript matching Terminal.app tab by tty
@@ -103,6 +106,33 @@ for _ in 1 2 3 4 5 6 7 8; do
 done
 
 SELF_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
+# Cmux: native banner + pane focus on click + sidebar badge, all via the
+# `cmux` CLI. Must run before the TERM_PROGRAM dispatch below because Cmux
+# renders Ghostty panes — TERM_PROGRAM may report "ghostty" or "cmux" — and
+# we don't want any of the macOS-banner branches to handle this first.
+# CMUX_SURFACE_ID is the most reliable signal (Cmux exports it per surface);
+# TERM_PROGRAM=cmux is a fallback if the env var got dropped.
+if [ -n "${CMUX_SURFACE_ID:-}" ] || [ "${TERM_PROGRAM:-}" = "cmux" ]; then
+  cmux_bin=$(command -v cmux 2>/dev/null || true)
+  [ -z "$cmux_bin" ] && [ -x /usr/local/bin/cmux ] && cmux_bin=/usr/local/bin/cmux
+  [ -z "$cmux_bin" ] && [ -x /opt/homebrew/bin/cmux ] && cmux_bin=/opt/homebrew/bin/cmux
+  if [ -n "$cmux_bin" ]; then
+    case "$event" in
+      notification) cmux_title="Claude Code: needs input" ;;
+      stop)         cmux_title="Claude Code: done" ;;
+      *)            cmux_title="Claude Code" ;;
+    esac
+    cmux_args=(notify --title "$cmux_title" --body "$msg")
+    [ -n "$subtitle" ] && cmux_args+=(--subtitle "$subtitle")
+    "$cmux_bin" "${cmux_args[@]}" >/dev/null 2>&1 || true
+    # Pulse a blue ring around the pane on input requests; skip on Stop
+    # so completion banners don't add visual noise.
+    [ "$event" = "notification" ] && "$cmux_bin" trigger-flash >/dev/null 2>&1 || true
+    exit 0
+  fi
+  echo "claude-terminal-focus: cmux CLI not on PATH, falling back to terminal-notifier" >&2
+fi
 
 case "${TERM_PROGRAM:-}" in
   vscode)

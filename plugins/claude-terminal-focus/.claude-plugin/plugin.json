@@ -1,6 +1,6 @@
 {
   "name": "claude-terminal-focus",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Click Claude Code notifications to jump back to the exact terminal tab (VS Code + macOS Terminal.app).",
   "author": {
     "name": "Daniele Zanni"

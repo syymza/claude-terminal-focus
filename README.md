@@ -13,7 +13,7 @@ Claude Code's `Notification` and `Stop` hooks fire a `terminal-notifier` banner 
 | macOS Terminal.app | AppleScript matches the tab by tty and selects its window.                  |
 | iTerm2             | AppleScript matches the session by tty and selects its tab/window.          |
 | Warp               | Activates Warp (no tab-level focus — Warp's AppleScript surface is limited).|
-| cmux               | `cmux focus-surface` focuses the exact pane (requires the `cmux` CLI on PATH). |
+| cmux               | Native `cmux notify` banner; click focuses the exact surface (even from another workspace), pulses a blue ring on input, badges the sidebar. No extension needed. |
 | Ghostty (plain)    | Banner shows with no click-through (Ghostty has no scriptable tab focus).   |
 | Anything else      | Banner shows with no click-through (graceful fallback).                     |
 
@@ -24,7 +24,7 @@ Claude Code's `Notification` and `Stop` hooks fire a `terminal-notifier` banner 
 - `jq` (`brew install jq`)
 - Node / `npx` (only needed at install time, to package the editor extension)
 - `code` or `cursor` CLI on `$PATH` (only if you use VS Code and/or Cursor — `install.sh` installs into whichever CLIs it finds)
-- `cmux` CLI on `$PATH` (only if you use [cmux](https://github.com/manaflow-ai/cmux) — ships with the app; install its "cmux" shell command from the menu bar)
+- `cmux` CLI on `$PATH` (only if you use [cmux](https://github.com/manaflow-ai/cmux) — already present for cmux users; install its "cmux" shell command from the menu bar if missing)
 
 ## Install
 
@@ -58,7 +58,7 @@ cursor --uninstall-extension claude-code-community.claude-focus 2>/dev/null
 
 - **Banner never appears** — `terminal-notifier` isn't allowed to post notifications. Check System Settings -> Notifications.
 - **Click does nothing (Terminal.app or iTerm2)** — automation permission prompt may have been denied. Check System Settings -> Privacy & Security -> Automation -> `terminal-notifier` -> enable the matching target (Terminal or iTerm).
-- **Click does nothing (cmux)** — the `cmux` CLI isn't on PATH, or `CMUX_SURFACE_ID` isn't set in the pane. Run `command -v cmux` and `echo $CMUX_SURFACE_ID` in the pane; if the binary isn't found, install the cmux shell command from cmux's menu bar.
+- **No banner inside cmux** — the `cmux` CLI isn't on PATH, so the hook fell back to `terminal-notifier`. Run `command -v cmux` and `echo $CMUX_SURFACE_ID` in the pane; if the binary isn't found, install the cmux shell command from cmux's menu bar. The hook logs a one-line warning to stderr when this happens.
 
 ## Repo layout
 
