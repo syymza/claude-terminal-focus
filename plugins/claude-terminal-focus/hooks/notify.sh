@@ -4,16 +4,16 @@
 # focuses the exact terminal tab Claude is running in.
 #
 # Supported terminals (via $TERM_PROGRAM):
-#   - cmux            -> `cmux notify` for native banner + click-to-focus +
-#                        sidebar badge (detected via $CMUX_SURFACE_ID first,
-#                        then $TERM_PROGRAM=cmux). Skips terminal-notifier.
+#   - cmux            -> hook exits early; cmux's bundled claude-hook
+#                        integration already fires a native banner with
+#                        click-to-focus, ring pulse, and sidebar badge.
+#                        Detected via $CMUX_SURFACE_ID (or $TERM_PROGRAM=cmux).
 #   - vscode          -> vscode:// URI handled by the claude-focus VS Code extension
 #                        (Cursor detected via VSCODE_GIT_ASKPASS_NODE, uses cursor://)
 #   - Apple_Terminal  -> AppleScript matching Terminal.app tab by tty
 #   - iTerm.app       -> AppleScript matching iTerm2 session by tty
 #   - WarpTerminal    -> bring Warp to front (tab focus not available)
-#   - ghostty         -> cmux focus-surface when $CMUX_SURFACE_ID is set
-#                        (plain Ghostty falls through with no click-through)
+#   - ghostty         -> banner only (no scriptable tab focus)
 #   - anything else   -> banner only, no click-through
 #
 # Banner layout:
@@ -107,31 +107,15 @@ done
 
 SELF_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-# Cmux: native banner + pane focus on click + sidebar badge, all via the
-# `cmux` CLI. Must run before the TERM_PROGRAM dispatch below because Cmux
-# renders Ghostty panes — TERM_PROGRAM may report "ghostty" or "cmux" — and
-# we don't want any of the macOS-banner branches to handle this first.
-# CMUX_SURFACE_ID is the most reliable signal (Cmux exports it per surface);
-# TERM_PROGRAM=cmux is a fallback if the env var got dropped.
+# Cmux already injects its own claude-hook integration when it launches
+# `claude` (Stop / Notification / etc. all call `cmux claude-hook ...`),
+# which fires a native cmux banner with click-to-focus, ring pulse, and
+# sidebar badge. Anything we do here is redundant — exit so we don't
+# stack a second banner on top of cmux's native one.
+# Detect via CMUX_SURFACE_ID first (most reliable; cmux exports it per
+# surface) and TERM_PROGRAM=cmux as a fallback.
 if [ -n "${CMUX_SURFACE_ID:-}" ] || [ "${TERM_PROGRAM:-}" = "cmux" ]; then
-  cmux_bin=$(command -v cmux 2>/dev/null || true)
-  [ -z "$cmux_bin" ] && [ -x /usr/local/bin/cmux ] && cmux_bin=/usr/local/bin/cmux
-  [ -z "$cmux_bin" ] && [ -x /opt/homebrew/bin/cmux ] && cmux_bin=/opt/homebrew/bin/cmux
-  if [ -n "$cmux_bin" ]; then
-    case "$event" in
-      notification) cmux_title="Claude Code: needs input" ;;
-      stop)         cmux_title="Claude Code: done" ;;
-      *)            cmux_title="Claude Code" ;;
-    esac
-    cmux_args=(notify --title "$cmux_title" --body "$msg")
-    [ -n "$subtitle" ] && cmux_args+=(--subtitle "$subtitle")
-    "$cmux_bin" "${cmux_args[@]}" >/dev/null 2>&1 || true
-    # Pulse a blue ring around the pane on input requests; skip on Stop
-    # so completion banners don't add visual noise.
-    [ "$event" = "notification" ] && "$cmux_bin" trigger-flash >/dev/null 2>&1 || true
-    exit 0
-  fi
-  echo "claude-terminal-focus: cmux CLI not on PATH, falling back to terminal-notifier" >&2
+  exit 0
 fi
 
 case "${TERM_PROGRAM:-}" in
@@ -160,18 +144,9 @@ case "${TERM_PROGRAM:-}" in
     execute_cmd="open -a 'Warp'"
     ;;
   ghostty)
-    # cmux runs panes inside Ghostty and exports CMUX_SURFACE_ID; plain
-    # Ghostty has no scriptable tab focus, so we only handle the cmux case.
-    # Resolve the cmux binary here (hook inherits the user's PATH);
-    # terminal-notifier's -execute runs under /bin/sh with a minimal PATH.
-    if [ -n "${CMUX_SURFACE_ID:-}" ]; then
-      cmux_bin=$(command -v cmux 2>/dev/null || true)
-      [ -z "$cmux_bin" ] && [ -x /usr/local/bin/cmux ] && cmux_bin=/usr/local/bin/cmux
-      [ -z "$cmux_bin" ] && [ -x /opt/homebrew/bin/cmux ] && cmux_bin=/opt/homebrew/bin/cmux
-      if [ -n "$cmux_bin" ]; then
-        execute_cmd="$cmux_bin focus-surface --surface '$CMUX_SURFACE_ID'"
-      fi
-    fi
+    # Plain Ghostty has no scriptable tab focus. Cmux-inside-Ghostty was
+    # already handled and exited above.
+    execute_cmd=""
     ;;
   *)
     execute_cmd=""
