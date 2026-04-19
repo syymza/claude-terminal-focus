@@ -67,6 +67,17 @@ last_assistant_text() {
     awk 'NF { print; exit }'
 }
 
+# If /remote-control is active for this session, Claude Code writes a
+# system/bridge_status line into the transcript carrying the live
+# claude.ai/code/session_<id> URL. Tapping that from the phone deep-links
+# into the actual running session in the Claude mobile app.
+remote_control_url() {
+  [ -z "$transcript" ] || [ ! -f "$transcript" ] && return 0
+  tail -r "$transcript" 2>/dev/null | head -n 200 | \
+    jq -r 'select(.type=="system" and .subtype=="bridge_status") | .url // empty' 2>/dev/null | \
+    awk 'NF { print; exit }'
+}
+
 case "$event" in
   notification)
     raw=$(jq -r '.message // "Needs your attention"' <<<"$payload")
@@ -96,8 +107,13 @@ if [ -n "${CLAUDE_NTFY_TOPIC:-}" ]; then
   ntfy_server="${CLAUDE_NTFY_SERVER:-https://ntfy.sh}"
   ntfy_title="Claude Code"
   [ -n "$subtitle" ] && ntfy_title="$ntfy_title — $subtitle"
+  # Click target: prefer the live remote-control URL (deep-links into this
+  # session in the Claude mobile app), otherwise fall back to the user's
+  # configured URL. Skip the header entirely if neither is available.
+  click_url=$(remote_control_url)
+  [ -z "$click_url" ] && click_url="${CLAUDE_NTFY_CLICK_URL:-}"
   ntfy_args=(--silent --show-error --max-time 3 -H "Title: $ntfy_title" -d "$msg")
-  [ -n "${CLAUDE_NTFY_CLICK_URL:-}" ] && ntfy_args+=(-H "Click: $CLAUDE_NTFY_CLICK_URL")
+  [ -n "$click_url" ] && ntfy_args+=(-H "Click: $click_url")
   curl "${ntfy_args[@]}" "$ntfy_server/$CLAUDE_NTFY_TOPIC" >/dev/null 2>&1 &
 fi
 

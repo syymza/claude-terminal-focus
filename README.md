@@ -44,7 +44,9 @@ Claude Code's `Notification` and `Stop` hooks fire a `terminal-notifier` banner 
 
 ## Phone notifications (optional)
 
-Opt in to get the same notifications pushed to your iPhone via [ntfy.sh](https://ntfy.sh). This runs **in addition to** the desktop banner — including inside cmux, where the desktop side is left to cmux's own integration. Tapping the phone notification can't focus a Mac terminal, but it can open an arbitrary URL (e.g. your repo).
+Opt in to get the same notifications pushed to your iPhone via [ntfy.sh](https://ntfy.sh). This runs **in addition to** the desktop banner — including inside cmux, where the desktop side is left to cmux's own integration.
+
+If you've enabled Claude Code's `/remote-control` for the session, the phone notification **deep-links into the live session** in the Claude mobile app on tap (the hook extracts the per-session `claude.ai/code/session_<id>` URL from the transcript). Otherwise tap either opens a URL you configure via `CLAUDE_NTFY_CLICK_URL`, or has no tap action.
 
 1. Install the **ntfy** iOS app and subscribe to a topic. Pick something unguessable — on public `ntfy.sh` the topic is the only access control, and the message body contains the first line of Claude's last reply:
    ```bash
